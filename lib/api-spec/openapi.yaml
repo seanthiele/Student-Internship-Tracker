@@ -1,0 +1,537 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Internship Tracker API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: internships
+    description: Internship application operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /internships:
+    get:
+      operationId: listInternships
+      tags: [internships]
+      summary: List all internship applications
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of internship applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Internship"
+    post:
+      operationId: createInternship
+      tags: [internships]
+      summary: Add a new internship application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternshipInput"
+      responses:
+        "201":
+          description: Created internship application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Internship"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /internships/stats:
+    get:
+      operationId: getInternshipStats
+      tags: [internships]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Aggregate stats about all applications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternshipStats"
+
+  /internships/deadlines:
+    get:
+      operationId: getUpcomingDeadlines
+      tags: [internships]
+      summary: Get upcoming deadlines within a window
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 14
+      responses:
+        "200":
+          description: List of upcoming deadline items sorted by urgency
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeadlineItem"
+
+  /internships/{id}/logs:
+    get:
+      operationId: listApplicationLogs
+      tags: [internships]
+      summary: List activity log entries for an internship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of log entries, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicationLog"
+        "404":
+          description: Internship not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createApplicationLog
+      tags: [internships]
+      summary: Add a log entry to an internship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationLogInput"
+      responses:
+        "201":
+          description: Created log entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationLog"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Internship not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /internships/{id}/logs/{logId}:
+    delete:
+      operationId: deleteApplicationLog
+      tags: [internships]
+      summary: Delete a log entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: logId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /internships/{id}:
+    get:
+      operationId: getInternship
+      tags: [internships]
+      summary: Get a single internship application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Internship application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Internship"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateInternship
+      tags: [internships]
+      summary: Update an internship application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternshipUpdate"
+      responses:
+        "200":
+          description: Updated internship application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Internship"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteInternship
+      tags: [internships]
+      summary: Delete an internship application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Internship:
+      type: object
+      required:
+        - id
+        - company
+        - role
+        - status
+        - appliedDate
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        company:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+          enum: [applied, interviewing, offered, accepted, rejected, withdrawn]
+        appliedDate:
+          type: string
+          format: date
+        interviewDate:
+          type: ["string", "null"]
+          format: date
+        offerDeadline:
+          type: ["string", "null"]
+          format: date
+        startDate:
+          type: ["string", "null"]
+          format: date
+        endDate:
+          type: ["string", "null"]
+          format: date
+        location:
+          type: ["string", "null"]
+        remote:
+          type: boolean
+        payRate:
+          type: ["string", "null"]
+        applicationUrl:
+          type: ["string", "null"]
+        contactName:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InternshipInput:
+      type: object
+      required:
+        - company
+        - role
+        - status
+        - appliedDate
+      properties:
+        company:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          enum: [applied, interviewing, offered, accepted, rejected, withdrawn]
+        appliedDate:
+          type: string
+          format: date
+        interviewDate:
+          type: ["string", "null"]
+          format: date
+        offerDeadline:
+          type: ["string", "null"]
+          format: date
+        startDate:
+          type: ["string", "null"]
+          format: date
+        endDate:
+          type: ["string", "null"]
+          format: date
+        location:
+          type: ["string", "null"]
+        remote:
+          type: boolean
+        payRate:
+          type: ["string", "null"]
+        applicationUrl:
+          type: ["string", "null"]
+        contactName:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    InternshipUpdate:
+      type: object
+      properties:
+        company:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          minLength: 1
+        status:
+          type: string
+          enum: [applied, interviewing, offered, accepted, rejected, withdrawn]
+        appliedDate:
+          type: string
+          format: date
+        interviewDate:
+          type: ["string", "null"]
+          format: date
+        offerDeadline:
+          type: ["string", "null"]
+          format: date
+        startDate:
+          type: ["string", "null"]
+          format: date
+        endDate:
+          type: ["string", "null"]
+          format: date
+        location:
+          type: ["string", "null"]
+        remote:
+          type: boolean
+        payRate:
+          type: ["string", "null"]
+        applicationUrl:
+          type: ["string", "null"]
+        contactName:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    InternshipStats:
+      type: object
+      required:
+        - total
+        - byStatus
+        - recentActivity
+      properties:
+        total:
+          type: integer
+        activeApplications:
+          type: integer
+        byStatus:
+          type: object
+          properties:
+            applied:
+              type: integer
+            interviewing:
+              type: integer
+            offered:
+              type: integer
+            accepted:
+              type: integer
+            rejected:
+              type: integer
+            withdrawn:
+              type: integer
+          required:
+            - applied
+            - interviewing
+            - offered
+            - accepted
+            - rejected
+            - withdrawn
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Internship"
+
+    DeadlineItem:
+      type: object
+      required:
+        - internship
+        - deadlineType
+        - deadlineDate
+        - daysUntil
+        - urgency
+      properties:
+        internship:
+          $ref: "#/components/schemas/Internship"
+        deadlineType:
+          type: string
+          enum: [interview, offer_deadline]
+        deadlineDate:
+          type: string
+          format: date
+        daysUntil:
+          type: integer
+        urgency:
+          type: string
+          enum: [critical, high, medium, low]
+
+    ApplicationLog:
+      type: object
+      required:
+        - id
+        - internshipId
+        - logType
+        - content
+        - loggedAt
+        - createdAt
+      properties:
+        id:
+          type: integer
+        internshipId:
+          type: integer
+        logType:
+          type: string
+          enum: [note, call, email, interview, offer, rejection, other]
+        content:
+          type: string
+        loggedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    ApplicationLogInput:
+      type: object
+      required:
+        - content
+      properties:
+        logType:
+          type: string
+          enum: [note, call, email, interview, offer, rejection, other]
+        content:
+          type: string
+          minLength: 1
+        loggedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
